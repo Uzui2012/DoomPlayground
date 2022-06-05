@@ -1,33 +1,25 @@
-import vizdoom as vzd
+from logging import exception
 from vizdoom import DoomGame
+from vizdoom import gym_wrapper
+import gym
 from random import choice
 from time import sleep, time
 
 from DQN import DQN_agent
 
-
-game = vzd.DoomGame()
-game.load_config("C:/Users/killi/ViZDoom/scenarios/basic.cfg")
-game.init()
-
-actions = [
-    [True, False, False],
-    [False, True, False],
-    [False, False, True]
-]
-
+env = gym.make("VizdoomBasic-v0")
+#print(f"OBSERVATION SPACE: {env.observation_space[0].n}")
+#print(f"ACTION SPACE: {env.action_space[0]}")
 dqn_agent = DQN_agent(3,1)
 
-for i in range(10):
-    game.new_episode()
-    while not game.is_episode_finished():
-        s = game.get_state()
-        print(s)
-        img = s.screen_buffer
-        misc = s.game_variables
+for i in range(1000):
+    done = False
+    observation = env.reset()
+    print(observation)
+    while not done:
+        
+        #action = dqn_agent.select_action(observation)
+        observation, reward, done, info = env.step(env.action_space.sample())
+        env.render()
 
-        action = dqn_agent.select_action(s)
-        reward = game.make_action(action)
-
-    print(f"total reward:     {game.get_total_reward()}")
 

@@ -14,7 +14,7 @@ num_eps = 50000
 ####################
 
 
-def calc_epsilon(steps_done):
+def calc_epsilon(steps_done, egreedy, egreedy_final, egreedy_decay):
     epsilon = egreedy_final + (egreedy - egreedy_final) * \
                 math.exp(-1. * steps_done / egreedy_decay )
     return epsilon
@@ -46,7 +46,7 @@ class ExperienceReplay(object):
     def __len__(self):
         return len(self.memory)
 
-class Model():
+class Model(nn.Module):
     def __init__(self, num_actions, num_frames):
         super(Model, self).__init__()
         self.conv1 = nn.Conv2d(num_frames, 32, 8, stride=4)
@@ -72,6 +72,11 @@ class DQN_agent():
         self.egreedy = 0.9
         self.egreedy_final = 0.01
         self.egreedy_decay = 150000
+        self.frames_total = 0
+        self.epsilon = calc_epsilon(self.frames_total, 
+                                    self.egreedy, 
+                                    self.egreedy_final, 
+                                    self.egreedy_decay)
         self.replay_mem_size = 100000
         self.batch_size = 64
         self.learning_rate = 0.00025
@@ -79,22 +84,32 @@ class DQN_agent():
         self.update_target_frequency = 10000
         self.clip_error = True
         self.double_dqn = True
+        
+
 
         self.num_actions = num_actions
         self.num_frames = num_frames
         self.memory = ExperienceReplay(self.replay_mem_size)
-        self.model = Model(num_actions, num_frames)
+        self.network = Model(num_actions, num_frames)
         
     
     def select_action(self, observation):
-        random_for_egreedy = torch.rand(1)[0]        
+        random_for_egreedy = torch.rand(1)[0]
+        self.frames_total += 1
+        self.epsilon = calc_epsilon(self.frames_total, 
+                                    self.egreedy, 
+                                    self.egreedy_final, 
+                                    self.egreedy_decay)
+
         if random_for_egreedy > self.epsilon:
             with torch.no_grad():
-                action_from_nn = self.model(observation)
+             
+                action_from_nn = self.network(observation)
                 action = torch.max(action_from_nn,1)[1]
                 action = action.item()
         else:
             action = random.randrange(0, self.num_actions)
+        return action
 
     def optimize(self):
         if(len(self.memory) < self.batch_size):
@@ -110,33 +125,33 @@ class DQN_agent():
         done = torch.Tensor(done).to(device)
 
         if self.double_dqn:
-            new_state_indexes = self.model(new_state).detach()
+            new_state_indexes = self.network(new_state).detach()
             max_new_state_indexes = torch.max(new_state_indexes, 1)[1]  
             
-            new_state_values = self.target_model(new_state).detach()
+            new_state_values = self.target_network(new_state).detach()
             max_new_state_values = new_state_values.gather(1, max_new_state_indexes.unsqueeze(1)).squeeze(1)
         else:
-            new_state_values = self.target_model(new_state).detach()
+            new_state_values = self.target_network(new_state).detach()
             max_new_state_values = torch.max(new_state_values, 1)[0]
         
         #Bellman Equ
         #Q[state, action] = reward + gamma*torch.max(Q[new_state])
         target_val = reward + (1 - done)*self.gamma * max_new_state_values
 
-        predicted_val = self.model(state).gather(1, action.unsqueeze(1)).squeeze(1) # Now we want to calculate gradient
+        predicted_val = self.network(state).gather(1, action.unsqueeze(1)).squeeze(1) # Now we want to calculate gradient
         loss = self.criterion(predicted_val, target_val)
         self.optimizer.zero_grad()
         loss.backward()
 
         if(self.clip_error):
-            for param in self.model.parameters():
+            for param in self.network.parameters():
                 param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
 
         if self.num_of_frames % self.update_target_frequency == 0:
-            self.target_model.load_state_dict(self.model.state_dict())
+            self.target_network.load_state_dict(self.network.state_dict())
 
         #if self.num_of_frames % save_model_freq == 0:
-        #    save_model(self.model)
+        #    save_model(self.network)
 
         self.num_of_frames += 1
