@@ -52,17 +52,17 @@ class Model(nn.Module):
         self.conv1 = nn.Conv2d(num_frames, 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
         self.conv3 = nn.Conv2d(64, 64, 3, stride=1)
-
-        self.tick = 0
-        self.fc1 = nn.Linear(7 * 7 * 64, 512)
+        
+        self.fc1 = nn.Linear(59904, 512)
         self.fc2 = nn.Linear(512, num_actions)
 
 
-    def forward(self, observation):
-        x = F.relu(self.conv1(observation))
+    def forward(self, frame):
+        
+        x = F.relu(self.conv1(frame))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
-        x = F.relu(self.fc1(x.view(x.size(0), 7 * 7 * 64))) # was 4* 4
+        x = F.relu(self.fc1(x.view(x.size(0), 59904))) # was 4* 4
         x = self.fc2(x)
 
         return x
@@ -85,8 +85,6 @@ class DQN_agent():
         self.clip_error = True
         self.double_dqn = True
         
-
-
         self.num_actions = num_actions
         self.num_frames = num_frames
         self.memory = ExperienceReplay(self.replay_mem_size)
@@ -102,8 +100,7 @@ class DQN_agent():
                                     self.egreedy_decay)
 
         if random_for_egreedy > self.epsilon:
-            with torch.no_grad():
-             
+            with torch.no_grad():             
                 action_from_nn = self.network(observation)
                 action = torch.max(action_from_nn,1)[1]
                 action = action.item()
