@@ -3,11 +3,12 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
+
 class DQN(nn.Module):
 
     def __init__(self, w, h, c, num_actions):
         super(DQN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=2)
+        self.conv1 = nn.Conv2d(c, 16, kernel_size=3, stride=2)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2)
         self.conv3 = nn.Conv2d(32, 32, kernel_size=3, stride=2)
         
