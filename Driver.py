@@ -11,7 +11,7 @@ import math
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Running on device: {device}")
-env = gymnasium.make("VizdoomBasic-v0", render_mode="human")
+env = gymnasium.make("VizdoomBasic-v0")#, render_mode="human")
 
 # %%
 import rlqlearning.rlqlUtil as util
@@ -69,16 +69,16 @@ for i in range(num_episodes):
     state, info = env.reset()
     state = torch.tensor(np.array(state['screen']), dtype=torch.float32, device=device).unsqueeze(0)
     state = torch.transpose(state, 1, 3)
-    print(state.shape)
+    #print(state.shape)
     score = 0
     while not done:
         action = select_action(state)
-        print(action.item())
+        #print(action.item())
         observation, reward, done, trunc, info = env.step(action.item())
         score += reward
         if done:
             next_state = None
-            print(f"Episode Score: {score}")
+            print(f"Episode {i} Score: {score}")
         else:
             next_state = torch.tensor(observation['screen'], dtype=torch.float32, device=device).unsqueeze(0)
             next_state = torch.transpose(next_state, 1, 3)
@@ -88,8 +88,3 @@ for i in range(num_episodes):
 
         # Move to the next state
         state = next_state
-
-        #env.render()
-        #sleep(1/30)
-
-

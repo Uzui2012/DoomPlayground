@@ -28,7 +28,7 @@ def optimize_model(replay_mem, policy, target, optimiser, batch_size, gamma, dev
     if len(replay_mem.memory) < batch_size:
         return
     
-    transitions = replay_mem.memory.sample(batch_size)
+    transitions = replay_mem.sample(batch_size)
     batch = Transition(*zip(*transitions))
 
     # Compute a mask of non-final states and concatenate the batch elements
@@ -39,7 +39,7 @@ def optimize_model(replay_mem, policy, target, optimiser, batch_size, gamma, dev
                                                 if s is not None])
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
-    reward_batch = torch.cat(batch.reward)
+    reward_batch = torch.tensor(batch.reward).cuda()
 
     # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
     # columns of actions taken. These are the actions which would've been taken
@@ -52,6 +52,7 @@ def optimize_model(replay_mem, policy, target, optimiser, batch_size, gamma, dev
     # This is merged based on the mask, such that we'll have either the expected
     # state value or 0 in case the state was final.
     next_state_values = torch.zeros(batch_size, device=device)
+    #print(next_state_values.is_cuda )
     with torch.no_grad():
         next_state_values[non_final_mask] = target(non_final_next_states).max(1).values
     # Compute the expected Q values
@@ -60,7 +61,7 @@ def optimize_model(replay_mem, policy, target, optimiser, batch_size, gamma, dev
     # Compute Huber loss
     criterion = nn.SmoothL1Loss()
     loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
-
+    #print(f"Loss: {loss}")
     # Optimize the model
     optimiser.zero_grad()
     loss.backward()
@@ -72,16 +73,35 @@ def plot_durations(episode_durations, show_result=False):
     plt.figure(1)
     durations_t = torch.tensor(episode_durations, dtype=torch.float)
     if show_result:
-        plt.title('Result')
+        plt.title('(Duration) Result')
     else:
         plt.clf()
-        plt.title('Training...')
+        plt.title('(Duration) Training...')
     plt.xlabel('Episode')
     plt.ylabel('Duration')
     plt.plot(durations_t.numpy())
     # Take 100 episode averages and plot them too
     if len(durations_t) >= 100:
         means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(99), means))
+        plt.plot(means.numpy())
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
+    
+def plot_avg_scores(episode_scores, show_result=False):
+    plt.figure(2)
+    scores_t = torch.tensor(episode_scores, dtype=torch.float)
+    if show_result:
+        plt.title('(Avg Score) Result')
+    else:
+        plt.clf()
+        plt.title('(Avg Score) Training...')
+    plt.xlabel('Episode')
+    plt.ylabel('Avg Score')
+    plt.plot(scores_t.numpy())
+    # Take 100 episode averages and plot them too
+    if len(scores_t) >= 100:
+        means = scores_t.unfold(0, 100, 1).mean(1).view(-1)
         means = torch.cat((torch.zeros(99), means))
         plt.plot(means.numpy())
 
