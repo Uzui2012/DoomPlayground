@@ -107,3 +107,22 @@ def plot_avg_scores(episode_scores, show_result=False):
 
     plt.pause(0.001)  # pause a bit so that plots are updated
     
+def plot_running_avg_scores(episode_scores, show_result=False):
+    plt.figure(2)
+    scores_t = torch.tensor(episode_scores, dtype=torch.float)
+    if show_result:
+        plt.title('(Running Avg Score) Result')
+    else:
+        plt.clf()
+        plt.title('(Running Avg Score) Training...')
+    plt.xlabel('Episode')
+    plt.ylabel('Running Avg Score')
+    plt.plot(scores_t.numpy())
+    # Take 100 episode averages and plot them too
+    if len(scores_t) >= 100:
+        means = scores_t.unfold(0, 100, 1).mean(1).view(-1)
+        means = torch.cat((torch.zeros(99), means))
+        plt.plot(means.numpy())
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
+    
