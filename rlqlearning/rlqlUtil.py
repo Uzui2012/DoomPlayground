@@ -24,7 +24,7 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory)
     
-def optimize_model(replay_mem, policy, target, optimiser, batch_size, gamma, device):
+def optimize_model(replay_mem, policy, target, optimiser, batch_size, gamma, device)-> float:
     if len(replay_mem.memory) < batch_size:
         return
     
@@ -61,13 +61,14 @@ def optimize_model(replay_mem, policy, target, optimiser, batch_size, gamma, dev
     # Compute Huber loss
     criterion = nn.SmoothL1Loss()
     loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
-    #print(f"Loss: {loss}")
+    output_loss = loss.item()
     # Optimize the model
     optimiser.zero_grad()
     loss.backward()
     # In-place gradient clipping
     torch.nn.utils.clip_grad_value_(policy.parameters(), 100)
     optimiser.step()
+    return output_loss
 
 def plot_durations(episode_durations, show_result=False):
     plt.figure(1)
@@ -80,12 +81,6 @@ def plot_durations(episode_durations, show_result=False):
     plt.xlabel('Episode')
     plt.ylabel('Duration')
     plt.plot(durations_t.numpy())
-    # Take 100 episode averages and plot them too
-    if len(durations_t) >= 100:
-        means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(99), means))
-        plt.plot(means.numpy())
-
     plt.pause(0.001)  # pause a bit so that plots are updated
     
 def plot_avg_scores(episode_scores, show_result=False):
@@ -99,12 +94,6 @@ def plot_avg_scores(episode_scores, show_result=False):
     plt.xlabel('Episode')
     plt.ylabel('Avg Score')
     plt.plot(scores_t.numpy())
-    # Take 100 episode averages and plot them too
-    if len(scores_t) >= 100:
-        means = scores_t.unfold(0, 100, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(99), means))
-        plt.plot(means.numpy())
-
     plt.pause(0.001)  # pause a bit so that plots are updated
     
 def plot_running_avg_scores(episode_scores, show_result=False):
@@ -118,11 +107,18 @@ def plot_running_avg_scores(episode_scores, show_result=False):
     plt.xlabel('Episode')
     plt.ylabel('Running Avg Score')
     plt.plot(scores_t.numpy())
-    # Take 100 episode averages and plot them too
-    if len(scores_t) >= 100:
-        means = scores_t.unfold(0, 100, 1).mean(1).view(-1)
-        means = torch.cat((torch.zeros(99), means))
-        plt.plot(means.numpy())
-
+    plt.pause(0.001)  # pause a bit so that plots are updated
+    
+def plot_loss(loss_aggr, show_result=False):
+    plt.figure(3)
+    loss_aggr_t = torch.tensor(loss_aggr, dtype=torch.float)
+    if show_result:
+        plt.title('(Loss) Result')
+    else:
+        plt.clf()
+        plt.title('(Loss) Training...')
+    plt.xlabel('Episode')
+    plt.ylabel('Loss')
+    plt.plot(loss_aggr_t.numpy())
     plt.pause(0.001)  # pause a bit so that plots are updated
     
