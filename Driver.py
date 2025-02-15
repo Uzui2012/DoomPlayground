@@ -13,7 +13,8 @@ import rlqlearning.models as models
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Running on device: {device}")
-env = gymnasium.make("VizdoomBasic-v0")#, render_mode="human")
+tmp_env = gymnasium.make("VizdoomBasic-v0", render_mode="rgb_array")
+env = gymnasium.wrappers.RecordVideo(env=tmp_env, video_folder="./rlqlearning/Recordings", name_prefix="vizdoombasic-video", episode_trigger=lambda t: t % 50 == 0)
 
 BATCH_SIZE = 128 # Transitions sampled from replay buffer
 GAMMA = 0.99 # Discount factor
@@ -22,6 +23,7 @@ EPSILON_END = 0.05
 EPSILON_DECAY = 1000
 TAU = 0.005 # Target network update rate
 LEARNING_RATE = 1e-4 # optimiser learning rate
+RUNNING_AVG_WINDOW = 5
 num_actions = env.action_space.n
 state, info = env.reset()
 screen_w = len(state['screen'])
@@ -56,14 +58,11 @@ def select_action(observation):
         return torch.tensor([[env.action_space.sample()]], device=device, dtype=torch.long)
 
 if torch.cuda.is_available():
-    num_episodes = 500
+    num_episodes = 1000
 else:
     num_episodes = 5
 
 for i in range(num_episodes):
-    if i == num_actions - 1:
-        tmp_env = gymnasium.make("VizdoomBasic-v0", render_mode="rgb_array")
-        env = gymnasium.wrappers.RecordVideo(env=tmp_env, video_folder="./rlqlearning/Recordings", name_prefix="test-video", episode_trigger=lambda t: t % 50 == 0)
     done = False
     state, info = env.reset()
     state = torch.tensor(np.array(state['screen']), dtype=torch.float32, device=device).unsqueeze(0)
@@ -106,13 +105,13 @@ for i in range(num_episodes):
             clear_output(wait=True)
 
             print(f"Episode {i} Score: {score}, Average: { (sum(episode_scores))  / (i+1) }")
-            util.plot_durations(episode_durations)
-            util.plot_avg_scores(avg_scores)
-            if i >= 3:
-                running_avg_scores.append((sum(avg_scores[-3:]))  / 3)
+            #util.plot_durations(episode_durations)
+            #util.plot_avg_scores(avg_scores)
+            if i >= RUNNING_AVG_WINDOW:
+                running_avg_scores.append((sum(avg_scores[-RUNNING_AVG_WINDOW:]))  / RUNNING_AVG_WINDOW)
                 #print(f"Episode {i} Score: {score}, Running Average (3 Episodes): {running_avg_scores[-1]}")
-                util.plot_running_avg_scores(running_avg_scores)
-            util.plot_loss(loss_aggr)
+                #util.plot_running_avg_scores(running_avg_scores)
+            #util.plot_loss(loss_aggr)
             break
 clear_output(wait=True)
 print('Complete')
@@ -120,8 +119,6 @@ util.plot_durations(episode_durations, show_result=True)
 util.plot_avg_scores(avg_scores, show_result=True)
 util.plot_running_avg_scores(running_avg_scores, show_result=True)
 util.plot_loss(loss_aggr, show_result=True)
-plt.ioff()
-plt.show()
 env.close()
 
 
