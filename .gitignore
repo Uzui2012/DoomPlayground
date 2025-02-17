@@ -1,0 +1,2 @@
+# Ignore ALL .mp4 files (recordings from training)
+*.mp4
