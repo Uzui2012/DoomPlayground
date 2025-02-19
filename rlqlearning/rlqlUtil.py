@@ -70,7 +70,7 @@ def optimize_model(replay_mem, policy, target, optimiser, batch_size, gamma, dev
     optimiser.step()
     return output_loss
 
-def plot_durations(episode_durations, show_result=False):
+def plot_durations(episode_durations, param_string, show_result=False):
     fig = plt.figure()
     durations_t = torch.tensor(episode_durations, dtype=torch.float)
     if show_result:
@@ -82,11 +82,11 @@ def plot_durations(episode_durations, show_result=False):
     plt.ylabel('Duration')
     plt.plot(durations_t.numpy())
     plt.pause(0.001)  # pause a bit so that plots are updated
-    fig.savefig("./rlqlearning/Recordings/duration.png")
+    fig.savefig(f"./rlqlearning/Recordings/duration_{param_string}.png")
     plt.show()
     plt.close()
     
-def plot_avg_scores(episode_scores, show_result=False):
+def plot_avg_scores(episode_scores, param_string, show_result=False):
     fig = plt.figure()
     scores_t = torch.tensor(episode_scores, dtype=torch.float)
     if show_result:
@@ -98,11 +98,11 @@ def plot_avg_scores(episode_scores, show_result=False):
     plt.ylabel('Avg Score')
     plt.plot(scores_t.numpy())
     plt.pause(0.001)  # pause a bit so that plots are updated
-    fig.savefig("./rlqlearning/Recordings/avg_scores.png")
+    fig.savefig(f"./rlqlearning/Recordings/avg_scores_{param_string}.png")
     plt.show()
     plt.close()
     
-def plot_running_avg_scores(episode_scores, show_result=False):
+def plot_running_avg_scores(episode_scores, param_string, show_result=False):
     fig = plt.figure()
     scores_t = torch.tensor(episode_scores, dtype=torch.float)
     if show_result:
@@ -114,11 +114,11 @@ def plot_running_avg_scores(episode_scores, show_result=False):
     plt.ylabel('Running Avg Score')
     plt.plot(scores_t.numpy())
     plt.pause(0.001)  # pause a bit so that plots are updated
-    fig.savefig("./rlqlearning/Recordings/running_avg_scores.png")
+    fig.savefig(f"./rlqlearning/Recordings/running_avg_scores_{param_string}.png")
     plt.show()
     plt.close()
     
-def plot_loss(loss_aggr, show_result=False):
+def plot_loss(loss_aggr, param_string, show_result=False):
     fig = plt.figure()
     loss_aggr_t = torch.tensor(loss_aggr, dtype=torch.float)
     if show_result:
@@ -130,7 +130,7 @@ def plot_loss(loss_aggr, show_result=False):
     plt.ylabel('Loss')
     plt.plot(loss_aggr_t.numpy())
     plt.pause(0.001)  # pause a bit so that plots are updated
-    fig.savefig("./rlqlearning/Recordings/loss.png")
+    fig.savefig(f"./rlqlearning/Recordings/loss_{param_string}.png")
     plt.show()
     plt.close()
     
