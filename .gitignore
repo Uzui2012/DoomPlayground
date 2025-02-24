@@ -1,2 +1,6 @@
 # Ignore ALL .mp4 files (recordings from training)
 *.mp4
+
+# Ignore files in models
+./SavedModels/*
+SavedModels/
